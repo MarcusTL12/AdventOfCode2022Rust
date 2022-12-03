@@ -1,10 +1,12 @@
 mod day1;
 mod day2;
+mod day3;
 
 fn main() {
     let funcs = [
         day1::PARTS,
         day2::PARTS,
+        day3::PARTS,
     ];
     let mut args = std::env::args();
     args.next();
