@@ -1,12 +1,11 @@
 use std::{
     fs::File,
-    io::{BufRead, BufReader},
+    io::{stdout, BufRead, BufReader, Write},
     thread,
     time::Duration,
 };
 
 use arrayvec::ArrayVec;
-use ndarray::Array2;
 
 pub const PARTS: [fn(); 2] = [part1, part2];
 
@@ -57,33 +56,20 @@ fn part2() {
     let mut x = 1;
 
     let mut sx = 0;
-    let mut sy = 0;
 
-    let mut screen =
-        Array2::from_shape_vec((6, 40), vec![false; 40 * 6]).unwrap();
-
-    fn push_to_screen(
-        screen: &mut Array2<bool>,
-        sx: &mut usize,
-        sy: &mut usize,
-        x: i32,
-    ) {
-        if (*sx as i32 - x).abs() <= 1 {
-            screen[(*sy, *sx)] = true;
-        }
+    fn push_to_screen(sx: &mut usize, x: i32) {
+        print!(
+            "{}",
+            if (*sx as i32 - x).abs() <= 1 {
+                '#'
+            } else {
+                ' '
+            }
+        );
 
         *sx += 1;
         if *sx == 40 {
             *sx = 0;
-            *sy += 1;
-        }
-    }
-
-    fn draw_screen(screen: &Array2<bool>) {
-        for r in screen.rows() {
-            for &x in r {
-                print!("{}", if x { '#' } else { ' ' });
-            }
             println!();
         }
     }
@@ -104,20 +90,17 @@ fn part2() {
         })
     {
         if let Some(n) = op {
-            push_to_screen(&mut screen, &mut sx, &mut sy, x);
-            push_to_screen(&mut screen, &mut sx, &mut sy, x);
+            push_to_screen(&mut sx, x);
+            push_to_screen(&mut sx, x);
 
             x += n;
         } else {
-            push_to_screen(&mut screen, &mut sx, &mut sy, x);
+            push_to_screen(&mut sx, x);
         }
 
         if ANIMATE {
-            draw_screen(&screen);
-            println!("\x1b[7A\r");
-            thread::sleep(Duration::from_millis(50));
+            stdout().flush().unwrap();
+            thread::sleep(Duration::from_millis(10));
         }
     }
-
-    draw_screen(&screen);
 }
