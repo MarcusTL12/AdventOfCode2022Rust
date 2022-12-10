@@ -1,6 +1,7 @@
 #![feature(array_zip)]
 
 mod day1;
+mod day10;
 mod day2;
 mod day3;
 mod day4;
@@ -21,6 +22,7 @@ fn main() {
         day7::PARTS,
         day8::PARTS,
         day9::PARTS,
+        day10::PARTS,
     ];
     let mut args = std::env::args();
     args.next();
