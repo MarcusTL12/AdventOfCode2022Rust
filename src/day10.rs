@@ -1,6 +1,8 @@
 use std::{
     fs::File,
     io::{BufRead, BufReader},
+    thread,
+    time::Duration,
 };
 
 use arrayvec::ArrayVec;
@@ -48,6 +50,8 @@ fn part1() {
 
     println!("{ans}");
 }
+
+const ANIMATE: bool = false;
 
 fn part2() {
     let mut x = 1;
@@ -106,6 +110,12 @@ fn part2() {
             x += n;
         } else {
             push_to_screen(&mut screen, &mut sx, &mut sy, x);
+        }
+
+        if ANIMATE {
+            draw_screen(&screen);
+            println!("\x1b[7A\r");
+            thread::sleep(Duration::from_millis(50));
         }
     }
 
