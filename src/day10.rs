@@ -50,7 +50,7 @@ fn part1() {
     println!("{ans}");
 }
 
-const ANIMATE: bool = false;
+const ANIMATE: bool = true;
 
 fn part2() {
     let mut x = 1;
@@ -66,6 +66,11 @@ fn part2() {
                 ' '
             }
         );
+
+        if ANIMATE {
+            stdout().flush().unwrap();
+            thread::sleep(Duration::from_millis(10));
+        }
 
         *sx += 1;
         if *sx == 40 {
@@ -96,11 +101,6 @@ fn part2() {
             x += n;
         } else {
             push_to_screen(&mut sx, x);
-        }
-
-        if ANIMATE {
-            stdout().flush().unwrap();
-            thread::sleep(Duration::from_millis(10));
         }
     }
 }
