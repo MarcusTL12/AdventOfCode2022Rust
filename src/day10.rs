@@ -50,7 +50,7 @@ fn part1() {
     println!("{ans}");
 }
 
-const ANIMATE: bool = true;
+const ANIMATE: bool = false;
 
 fn part2() {
     let mut x = 1;
