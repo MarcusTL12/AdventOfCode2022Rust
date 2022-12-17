@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     fs::File,
     io::{BufRead, BufReader},
 };
@@ -44,27 +45,89 @@ fn add_range_to_list(ranges: &mut Vec<[i32; 2]>, new_range: [i32; 2]) {
         .skip_while(|&i| new_range[0] > ranges[i][1] + 1)
         .next()
     {
-        ranges[i] = range_union(ranges[i], new_range).unwrap();
+        if let Some(r) = range_union(ranges[i], new_range) {
+            ranges[i] = r;
 
-        while ranges.len() > i + 1
-            && !range_disconnected(ranges[i], ranges[i + 1])
-        {
-            ranges[i] = range_union(ranges[i], new_range).unwrap();
-            ranges.remove(i + 1);
+            while ranges.len() > i + 1
+                && !range_disconnected(ranges[i], ranges[i + 1])
+            {
+                ranges[i] = range_union(ranges[i], ranges[i + 1]).unwrap();
+                ranges.remove(i + 1);
+            }
+        } else {
+            ranges.insert(i, new_range);
         }
     } else {
         ranges.push(new_range);
     }
 }
 
-fn part1() {
-    // let input = parse_input("input/day15/ex1");
+fn x_range_at_y(
+    [[sx, sy], [bx, by]]: [[i32; 2]; 2],
+    y: i32,
+) -> Option<[i32; 2]> {
+    let d = (sx - bx).abs() + (sy - by).abs();
 
-    let mut ranges = vec![[3, 5], [7, 10], [13, 15], [17, 20], [25, 30]];
-
-    add_range_to_list(&mut ranges, [9, 18]);
-
-    println!("{ranges:?}");
+    if (sy - y).abs() <= d {
+        let half_width = d - (sy - y).abs();
+        Some([sx - half_width, sx + half_width])
+    } else {
+        None
+    }
 }
 
-fn part2() {}
+fn part1() {
+    let input = parse_input("input/day15/input");
+
+    let y = 2000000;
+    // let y = 10;
+
+    let mut beacons_in_row = HashSet::new();
+
+    let mut ranges = Vec::new();
+
+    for s in input {
+        if s[1][1] == y {
+            beacons_in_row.insert(s[1][0]);
+        };
+
+        if let Some(r) = x_range_at_y(s, y) {
+            add_range_to_list(&mut ranges, r);
+        }
+    }
+
+    let ans = ranges.iter().map(|[a, b]| b - a + 1).sum::<i32>()
+        - beacons_in_row.len() as i32;
+
+    println!("{ans}");
+}
+
+fn part2() {
+    let input = parse_input("input/day15/input");
+
+    let box_width = 4000_000;
+
+    let mut ranges = Vec::new();
+
+    for y in 0..=box_width {
+        ranges.clear();
+        for &s in &input {
+            if let Some(r) = x_range_at_y(s, y) {
+                if r[1] >= 0 && r[0] <= box_width {
+                    let r = [r[0].max(0), r[1].min(box_width)];
+                    add_range_to_list(&mut ranges, r);
+                }
+            }
+        }
+
+        if ranges.len() > 1 {
+            let x = ranges[0][1] + 1;
+
+            let ans = (x as i64) * (box_width as i64) + y as i64;
+
+            println!("{ans}");
+
+            break;
+        }
+    }
+}
