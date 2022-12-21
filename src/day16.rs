@@ -4,11 +4,12 @@ use std::{
 };
 
 use ndarray::Array2;
+use priority_queue::PriorityQueue;
 use regex::Regex;
 
 pub const PARTS: [fn(); 2] = [part1, part2];
 
-fn parse_input(filename: &str) -> (Vec<u32>, Array2<usize>) {
+fn parse_input(filename: &str) -> (Vec<u32>, Array2<u32>) {
     let reg = Regex::new(
         r"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)",
     )
@@ -91,11 +92,55 @@ fn parse_input(filename: &str) -> (Vec<u32>, Array2<usize>) {
     (nonzero_flows, distmat)
 }
 
-fn part1() {
-    let (flows, distmat) = parse_input("input/day16/input");
+fn potential_flow(flows: &[u32], open_valves: &[bool], time: u32) -> u32 {
+    flows
+        .iter()
+        .zip(open_valves.iter())
+        .filter(|(_, &x)| !x)
+        .map(|(x, _)| x)
+        .sum::<u32>()
+        * time
+}
 
-    println!("{flows:?}\n");
-    println!("{distmat:2?}");
+fn solve_dijkstra(
+    flows: &[u32],
+    distmat: &Array2<u32>,
+    open_valves: Vec<bool>,
+    time: u32,
+) {
+    let mut queue = PriorityQueue::new();
+
+    let potential = potential_flow(flows, &open_valves, time);
+
+    queue.push((0, open_valves, time), potential);
+
+    while let Some(((pos, open_valves, time_left), potential)) = queue.pop() {
+        for npos in (0..open_valves.len()).filter(|&i| !open_valves[i]) {
+            let d = distmat[[pos, npos]];
+
+            if time_left >= d + 1 {
+                let mut new_open_valves = open_valves.clone();
+                new_open_valves[npos] = true;
+
+                let time_after_move = time_left - d - 1;
+
+                let potential_after_move =
+                    potential_flow(flows, &new_open_valves, time_after_move);
+
+                let k = (npos, new_open_valves, time_after_move);
+
+                if let Some(old_pot) = queue.get_priority(&k) {
+                    // update prio
+                }
+            }
+        }
+    }
+}
+
+fn part1() {
+    let (flows, distmat) = parse_input("input/day16/ex1");
+
+    solve_dijkstra(&flows, &distmat, vec![false; flows.len()], 30);
 }
 
 fn part2() {}
