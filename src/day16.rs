@@ -5,6 +5,7 @@ use std::{
 
 use ndarray::Array2;
 use priority_queue::PriorityQueue;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use regex::Regex;
 
 pub const PARTS: [fn(); 2] = [part1, part2];
@@ -170,6 +171,7 @@ fn part2() {
     let (flows, distmat) = parse_input("input/day16/input");
 
     let ans = (0..2_u32.pow(flows.len() as u32 - 1))
+        .into_par_iter()
         .map(|i| {
             let mut my_valves = vec![false; flows.len()];
             let mut el_valves = vec![false; flows.len()];
