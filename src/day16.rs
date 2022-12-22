@@ -92,14 +92,13 @@ fn parse_input(filename: &str) -> (Vec<u32>, Array2<u32>) {
     (nonzero_flows, distmat)
 }
 
-fn potential_flow(flows: &[u32], open_valves: &[bool], time: u32) -> u32 {
+fn instantaneous_potential_flow(flows: &[u32], open_valves: &[bool]) -> u32 {
     flows
         .iter()
         .zip(open_valves.iter())
         .filter(|(_, &x)| !x)
         .map(|(x, _)| x)
         .sum::<u32>()
-        * time
 }
 
 fn solve_dijkstra(
@@ -107,40 +106,64 @@ fn solve_dijkstra(
     distmat: &Array2<u32>,
     open_valves: Vec<bool>,
     time: u32,
-) {
+) -> u32 {
     let mut queue = PriorityQueue::new();
 
-    let potential = potential_flow(flows, &open_valves, time);
+    let max_potential =
+        instantaneous_potential_flow(flows, &open_valves) * time;
 
-    queue.push((0, open_valves, time), potential);
+    queue.push((0, open_valves, time), max_potential);
 
     while let Some(((pos, open_valves, time_left), potential)) = queue.pop() {
-        for npos in (0..open_valves.len()).filter(|&i| !open_valves[i]) {
-            let d = distmat[[pos, npos]];
+        if time_left == 0 {
+            return potential;
+        }
 
-            if time_left >= d + 1 {
+        let mut added_nodes = false;
+
+        for npos in (0..open_valves.len()).filter(|&i| !open_valves[i]) {
+            let d = distmat[[pos, npos]] + 1;
+
+            if time_left >= d {
+                added_nodes = true;
+
                 let mut new_open_valves = open_valves.clone();
                 new_open_valves[npos] = true;
 
-                let time_after_move = time_left - d - 1;
+                let time_after_move = time_left - d;
 
-                let potential_after_move =
-                    potential_flow(flows, &new_open_valves, time_after_move);
+                let potential_lost =
+                    instantaneous_potential_flow(flows, &open_valves) * d;
 
                 let k = (npos, new_open_valves, time_after_move);
 
-                if let Some(old_pot) = queue.get_priority(&k) {
-                    // update prio
-                }
+                queue.push_increase(k, potential - potential_lost);
             }
         }
+
+        if !added_nodes {
+            let potential_lost =
+                instantaneous_potential_flow(flows, &open_valves) * time_left;
+
+            queue.push_increase(
+                (pos, open_valves, 0),
+                potential - potential_lost,
+            );
+        }
     }
+
+    panic!("Did not find solution");
 }
 
 fn part1() {
-    let (flows, distmat) = parse_input("input/day16/ex1");
+    let (flows, distmat) = parse_input("input/day16/input");
 
-    solve_dijkstra(&flows, &distmat, vec![false; flows.len()], 30);
+    let mut open_valves = vec![false; flows.len()];
+    open_valves[0] = true;
+
+    let ans = solve_dijkstra(&flows, &distmat, open_valves, 30);
+
+    println!("{ans}");
 }
 
 fn part2() {}
