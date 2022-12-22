@@ -166,4 +166,31 @@ fn part1() {
     println!("{ans}");
 }
 
-fn part2() {}
+fn part2() {
+    let (flows, distmat) = parse_input("input/day16/input");
+
+    let ans = (0..2_u32.pow(flows.len() as u32 - 1))
+        .map(|i| {
+            let mut my_valves = vec![false; flows.len()];
+            let mut el_valves = vec![false; flows.len()];
+
+            my_valves[0] = true;
+            el_valves[0] = true;
+
+            let mut k = i;
+
+            for j in 1..flows.len() {
+                let b = k & 1 == 0;
+                my_valves[j] = b;
+                el_valves[j] = !b;
+                k >>= 1;
+            }
+
+            solve_dijkstra(&flows, &distmat, my_valves, 26)
+                + solve_dijkstra(&flows, &distmat, el_valves, 26)
+        })
+        .max()
+        .unwrap();
+
+    println!("{ans}");
+}
