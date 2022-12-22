@@ -105,12 +105,13 @@ fn instantaneous_potential_flow(flows: &[u32], mut open_valves: u32) -> u32 {
 }
 
 fn solve_dijkstra(
+    queue: &mut PriorityQueue<(usize, u32, u32), u32>,
     flows: &[u32],
     distmat: &Array2<u32>,
     open_valves: u32,
     time: u32,
 ) -> u32 {
-    let mut queue = PriorityQueue::new();
+    queue.clear();
 
     let max_potential = instantaneous_potential_flow(flows, open_valves) * time;
 
@@ -164,7 +165,8 @@ fn solve_dijkstra(
 fn part1() {
     let (flows, distmat) = parse_input("input/day16/input");
 
-    let ans = solve_dijkstra(&flows, &distmat, 1, 30);
+    let ans =
+        solve_dijkstra(&mut PriorityQueue::new(), &flows, &distmat, 1, 30);
 
     println!("{ans}");
 }
@@ -174,13 +176,16 @@ fn part2() {
 
     let ans = (0..2_u32.pow(flows.len() as u32 - 1))
         .into_par_iter()
-        .map(|i| {
-            let my_valves = (i << 1) | 1;
-            let el_valves = ((!i) << 1) | 1;
+        .map_init(
+            || PriorityQueue::new(),
+            |queue, i| {
+                let my_valves = (i << 1) | 1;
+                let el_valves = ((!i) << 1) | 1;
 
-            solve_dijkstra(&flows, &distmat, my_valves, 26)
-                + solve_dijkstra(&flows, &distmat, el_valves, 26)
-        })
+                solve_dijkstra(queue, &flows, &distmat, my_valves, 26)
+                    + solve_dijkstra(queue, &flows, &distmat, el_valves, 26)
+            },
+        )
         .max()
         .unwrap();
 
