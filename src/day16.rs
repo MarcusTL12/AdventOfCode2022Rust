@@ -105,7 +105,7 @@ fn instantaneous_potential_flow(flows: &[u32], mut open_valves: u32) -> u32 {
 }
 
 fn solve_dijkstra(
-    queue: &mut PriorityQueue<(usize, u32, u32), u32>,
+    queue: &mut PriorityQueue<(u32, u32, u32), u32>,
     flows: &[u32],
     distmat: &Array2<u32>,
     open_valves: u32,
@@ -130,7 +130,7 @@ fn solve_dijkstra(
             open_valves_cpy >>= 1;
             b
         }) {
-            let d = distmat[[pos, npos]] + 1;
+            let d = distmat[[pos as usize, npos]] + 1;
 
             if time_left >= d {
                 added_nodes = true;
@@ -142,7 +142,7 @@ fn solve_dijkstra(
                 let potential_lost =
                     instantaneous_potential_flow(flows, open_valves) * d;
 
-                let k = (npos, new_open_valves, time_after_move);
+                let k = (npos as u32, new_open_valves, time_after_move);
 
                 queue.push_increase(k, potential - potential_lost);
             }
