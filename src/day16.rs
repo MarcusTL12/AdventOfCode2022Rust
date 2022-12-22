@@ -93,25 +93,26 @@ fn parse_input(filename: &str) -> (Vec<u32>, Array2<u32>) {
     (nonzero_flows, distmat)
 }
 
-fn instantaneous_potential_flow(flows: &[u32], open_valves: &[bool]) -> u32 {
+fn instantaneous_potential_flow(flows: &[u32], mut open_valves: u32) -> u32 {
     flows
         .iter()
-        .zip(open_valves.iter())
-        .filter(|(_, &x)| !x)
-        .map(|(x, _)| x)
+        .filter(|_| {
+            let b = open_valves & 1 == 0;
+            open_valves >>= 1;
+            b
+        })
         .sum::<u32>()
 }
 
 fn solve_dijkstra(
     flows: &[u32],
     distmat: &Array2<u32>,
-    open_valves: Vec<bool>,
+    open_valves: u32,
     time: u32,
 ) -> u32 {
     let mut queue = PriorityQueue::new();
 
-    let max_potential =
-        instantaneous_potential_flow(flows, &open_valves) * time;
+    let max_potential = instantaneous_potential_flow(flows, open_valves) * time;
 
     queue.push((0, open_valves, time), max_potential);
 
@@ -122,19 +123,23 @@ fn solve_dijkstra(
 
         let mut added_nodes = false;
 
-        for npos in (0..open_valves.len()).filter(|&i| !open_valves[i]) {
+        let mut open_valves_cpy = open_valves;
+        for npos in (0..flows.len()).filter(|_| {
+            let b = open_valves_cpy & 1 == 0;
+            open_valves_cpy >>= 1;
+            b
+        }) {
             let d = distmat[[pos, npos]] + 1;
 
             if time_left >= d {
                 added_nodes = true;
 
-                let mut new_open_valves = open_valves.clone();
-                new_open_valves[npos] = true;
+                let new_open_valves = open_valves | (1 << npos);
 
                 let time_after_move = time_left - d;
 
                 let potential_lost =
-                    instantaneous_potential_flow(flows, &open_valves) * d;
+                    instantaneous_potential_flow(flows, open_valves) * d;
 
                 let k = (npos, new_open_valves, time_after_move);
 
@@ -144,7 +149,7 @@ fn solve_dijkstra(
 
         if !added_nodes {
             let potential_lost =
-                instantaneous_potential_flow(flows, &open_valves) * time_left;
+                instantaneous_potential_flow(flows, open_valves) * time_left;
 
             queue.push_increase(
                 (pos, open_valves, 0),
@@ -159,10 +164,7 @@ fn solve_dijkstra(
 fn part1() {
     let (flows, distmat) = parse_input("input/day16/input");
 
-    let mut open_valves = vec![false; flows.len()];
-    open_valves[0] = true;
-
-    let ans = solve_dijkstra(&flows, &distmat, open_valves, 30);
+    let ans = solve_dijkstra(&flows, &distmat, 1, 30);
 
     println!("{ans}");
 }
@@ -173,20 +175,8 @@ fn part2() {
     let ans = (0..2_u32.pow(flows.len() as u32 - 1))
         .into_par_iter()
         .map(|i| {
-            let mut my_valves = vec![false; flows.len()];
-            let mut el_valves = vec![false; flows.len()];
-
-            my_valves[0] = true;
-            el_valves[0] = true;
-
-            let mut k = i;
-
-            for j in 1..flows.len() {
-                let b = k & 1 == 0;
-                my_valves[j] = b;
-                el_valves[j] = !b;
-                k >>= 1;
-            }
+            let my_valves = (i << 1) | 1;
+            let el_valves = ((!i) << 1) | 1;
 
             solve_dijkstra(&flows, &distmat, my_valves, 26)
                 + solve_dijkstra(&flows, &distmat, el_valves, 26)
