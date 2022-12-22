@@ -110,6 +110,7 @@ fn solve_dijkstra(
     distmat: &Array2<u32>,
     open_valves: u32,
     time: u32,
+    lower_bound: u32,
 ) -> u32 {
     queue.clear();
 
@@ -144,7 +145,11 @@ fn solve_dijkstra(
 
                 let k = (npos as u32, new_open_valves, time_after_move);
 
-                queue.push_increase(k, potential - potential_lost);
+                let new_potential = potential - potential_lost;
+
+                if new_potential >= lower_bound {
+                    queue.push_increase(k, new_potential);
+                }
             }
         }
 
@@ -152,27 +157,36 @@ fn solve_dijkstra(
             let potential_lost =
                 instantaneous_potential_flow(flows, open_valves) * time_left;
 
-            queue.push_increase(
-                (pos, open_valves, 0),
-                potential - potential_lost,
-            );
+            let new_potential = potential - potential_lost;
+
+            if new_potential >= lower_bound {
+                queue.push_increase((pos, open_valves, 0), new_potential);
+            }
         }
     }
 
-    panic!("Did not find solution");
+    0
 }
 
 fn part1() {
     let (flows, distmat) = parse_input("input/day16/input");
 
-    let ans =
-        solve_dijkstra(&mut PriorityQueue::new(), &flows, &distmat, 1, 30);
+    let ans = solve_dijkstra(
+        &mut PriorityQueue::new(),
+        &flows,
+        &distmat,
+        1,
+        30,
+        1500,
+    );
 
     println!("{ans}");
 }
 
 fn part2() {
     let (flows, distmat) = parse_input("input/day16/input");
+
+    let lower_bound = 1250;
 
     let ans = (0..2_u32.pow(flows.len() as u32 - 1))
         .into_par_iter()
@@ -182,8 +196,21 @@ fn part2() {
                 let my_valves = (i << 1) | 1;
                 let el_valves = ((!i) << 1) | 1;
 
-                solve_dijkstra(queue, &flows, &distmat, my_valves, 26)
-                    + solve_dijkstra(queue, &flows, &distmat, el_valves, 26)
+                solve_dijkstra(
+                    queue,
+                    &flows,
+                    &distmat,
+                    my_valves,
+                    26,
+                    lower_bound,
+                ) + solve_dijkstra(
+                    queue,
+                    &flows,
+                    &distmat,
+                    el_valves,
+                    26,
+                    lower_bound,
+                )
             },
         )
         .max()
